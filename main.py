@@ -11,6 +11,7 @@ led_fase_enxague = 13
 led_fase_lavagem = 15
 led_fase_molho = 19
 led_principal = 21
+led_agua = 33
 
 # botoes
 botao_liga_desliga = 18
@@ -27,7 +28,6 @@ botao_avanca_fase = 8
 
 ligado = False
 
-
 lavagem_em_curso = False
 condicao_definida = False
 
@@ -37,14 +37,12 @@ condicao_roupa = 3
 # tempo de enxague e molho em s, para teste
 tempo_enxague_molho = [(20, 10), (40, 20), (60, 30)]
 
-
 # None = ociosa, 0 = molho, 1 = lavagem, 2 = enxague, 3 = centrifuga
 fase_atual = None
 
 # Condicoes de tempo
 inicio_enxague = 0
 inicio_centrifuga = 0
-
 
 
 def setup():
@@ -60,7 +58,6 @@ def setup():
 
 
 def liga_lavadora(self):
-
     global ligado
     if ligado is True:
         ligado = False
@@ -96,7 +93,6 @@ def reset():
 
 
 def apaga_leds_fases(fase_atual):
-
     if (fase_atual == 1):
         apaga_led_lavagem()
         global inicio_enxague
@@ -133,11 +129,10 @@ def apaga_led_centrifuga():
 
 
 def avanca(self):
-
     global fase_atual
     if fase_atual > 0:
 
-        if(fase_atual < 3):
+        if fase_atual < 3:
             apaga_leds_fases(fase_atual)
             fase_atual += 1
         else:
@@ -147,11 +142,9 @@ def avanca(self):
 
 
 def main():
-
     # variaveis locais
     inicio_molho = 0
     inicio_lavagem = 0
-
 
     primeiro_despejo = True
     enchimento = False
@@ -165,7 +158,7 @@ def main():
     contador = 0
     while 1:
         while (ligado):
-           # print("ligado")
+            # print("ligado")
 
             global condicao_definida
 
@@ -175,10 +168,36 @@ def main():
 
                 if GPIO.input(botao_roupa_normal) == True:
                     condicao_roupa = 0
-                elif GPIO.input(botao_roupa_suja) == True:
+
+                    # pisca o led 3x e deixa aceso
+                    for x in range(3):
+                        GPIO.output(led_agua, True)
+                        time.sleep(1)
+                        GPIO.output(led_agua, False)
+                        time.sleep(1)
+                    GPIO.output(led_agua, True)
+
+                elif GPIO.input(botao_roupa_suja):
                     condicao_roupa = 1
-                elif GPIO.input(botao_roupa_muito_suja) == True:
+
+                    # pisca o led 5x e deixa aceso
+                    for x in range(5):
+                        GPIO.output(led_agua, True)
+                        time.sleep(1)
+                        GPIO.output(led_agua, False)
+                        time.sleep(1)
+                    GPIO.output(led_agua, True)
+
+                elif GPIO.input(botao_roupa_muito_suja):
                     condicao_roupa = 2
+
+                    # pisca o led 7x e deixa aceso
+                    for x in range(7):
+                        GPIO.output(led_agua, True)
+                        time.sleep(1)
+                        GPIO.output(led_agua, False)
+                        time.sleep(1)
+                    GPIO.output(led_agua, True)
 
                 if (condicao_roupa < 3):
                     condicao_definida = True
@@ -201,8 +220,7 @@ def main():
 
                     tempo_molho = tempo_enxague_molho[condicao_roupa][1]
 
-                    if(fim_molho - inicio_molho >= tempo_molho):
-
+                    if fim_molho - inicio_molho >= tempo_molho:
                         apaga_led_molho()
 
                         inicio_lavagem = time.time()
@@ -217,9 +235,8 @@ def main():
                     GPIO.output(led_motor_velocidade_normal, True)
 
                     fim_lavagem = time.time()
-                
 
-                    if(fim_lavagem - inicio_lavagem >= tempo_lavagem):
+                    if fim_lavagem - inicio_lavagem >= tempo_lavagem:
                         apaga_led_lavagem()
                         global inicio_enxague
                         inicio_enxague = time.time()
@@ -229,41 +246,38 @@ def main():
 
                     tempo_total_enxague = tempo_enxague_molho[condicao_roupa][0]
 
-                    
                     tempo_despejo = tempo_total_enxague / 3
                     tempo_enchimento = tempo_total_enxague / 3
 
-                  
                     GPIO.output(led_fase_enxague, True)
 
-
-                    if(primeiro_despejo is True):
+                    if primeiro_despejo is True:
 
                         GPIO.output(led_centrifuga, True)
+                        GPIO.output(led_agua, False)
                         tempo_atual_despejo = time.time()
 
-                        if (tempo_atual_despejo - inicio_enxague > tempo_despejo):
-
+                        if tempo_atual_despejo - inicio_enxague > tempo_despejo:
                             primeiro_despejo = False
                             enchimento = True
                             GPIO.output(led_centrifuga, False)
 
-
-                    if (enchimento is True):
+                    if enchimento is True:
                         GPIO.output(led_motor_velocidade_normal, True)
+                        GPIO.output(led_agua, True)
 
                         tempo_atual_enchimento = time.time()
-                        if (tempo_atual_enchimento - inicio_enxague > (tempo_despejo + tempo_enchimento)):
+                        if tempo_atual_enchimento - inicio_enxague > (tempo_despejo + tempo_enchimento):
                             enchimento = False
                             segundo_despejo = True
                             GPIO.output(led_motor_velocidade_normal, False)
 
-                    if (segundo_despejo is True):
+                    if segundo_despejo is True:
                         GPIO.output(led_centrifuga, True)
+                        GPIO.output(led_agua, False)
                         tempo_atual_despejo = time.time()
 
-                        if (tempo_atual_despejo - inicio_enxague > tempo_total_enxague):
-
+                        if tempo_atual_despejo - inicio_enxague > tempo_total_enxague:
                             segundo_despejo = False
                             GPIO.output(led_centrifuga, False)
                             GPIO.output(led_fase_enxague, False)
@@ -273,21 +287,20 @@ def main():
                             inicio_centrifuga = time.time()
 
 
-                    
+
 
                 elif fase_atual == 3:
-                    
+
                     tempo_centrifuga = 10
-                    
+
                     GPIO.output(led_fase_centrifuga, True)
                     GPIO.output(led_centrifuga, True)
                     GPIO.output(led_motor_velocidade_alta, True)
 
                     fim_centrifuga = time.time()
 
-                    if (fim_centrifuga - inicio_centrifuga >= tempo_centrifuga ):
+                    if (fim_centrifuga - inicio_centrifuga >= tempo_centrifuga):
                         reset()
-
 
 
 if __name__ == '__main__':
